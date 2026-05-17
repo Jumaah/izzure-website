@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { translations, type Lang, type Translations } from "./i18n";
-import imgLogo from "../assets/Logo.png";
-import imgHeroProduct from "../assets/imgHero.png";
-import imgHeroTree from "../assets/HeroTree.png";
-import imgGoldSplatter from "../assets/GoldSplatter.png";
-import imgBadge from "../assets/Badge.png";
-import imgProductCard from "../assets/ProductCard.png";
-import imgStory1 from "../assets/Story1.png";
-import imgStory2 from "../assets/Story2.png";
-import imgStory3 from "../assets/Story3.png";
-import imgStory4 from "../assets/Story4.png";
-import imgContactDecor from "../assets/ContactDecor.png";
+import imgLogo from "../assets/Logo.webp";
+import imgHeroProduct from "../assets/imgHero.webp";
+import imgHeroTree from "../assets/HeroTree.webp";
+import imgGoldSplatter from "../assets/GoldSplatter.webp";
+import imgBadge from "../assets/Badge.webp";
+import imgProductCard from "../assets/ProductCard.webp";
+import imgStory1 from "../assets/Story1.webp";
+import imgStory2 from "../assets/Story2.webp";
+import imgStory3 from "../assets/Story3.webp";
+import imgStory4 from "../assets/Story4.webp";
+import imgContactDecor from "../assets/ContactDecor.webp";
 import svgPaths from "../imports/Grid-1/svg-u0yi2z99jn";
 
 /* ─────────────────────────────────────────────────────────────────
@@ -54,7 +54,10 @@ function txt(
 /* ═══════════════════════════════════════════════════════════════
    NAVBAR
 ═══════════════════════════════════════════════════════════════ */
-interface NavbarProps extends LangProps {
+interface NavbarProps {
+  t: Translations;
+  isRTL: boolean;
+  lang: Lang;
   onSwitch: (l: Lang) => void;
 }
 
@@ -64,6 +67,8 @@ type ObservedSectionId = (typeof observedSectionIds)[number];
 function Navbar({ t, isRTL, lang, onSwitch }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState<ObservedSectionId>("hero");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false); // الحالة الجديدة لقائمة اللغة
 
   const navLinks = [
     { label: t.nav.collection, href: "#collection" },
@@ -72,7 +77,10 @@ function Navbar({ t, isRTL, lang, onSwitch }: NavbarProps) {
   ];
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 40);
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+      if (window.scrollY > 40) setIsLangMenuOpen(false); // إغلاق قائمة اللغة عند النزول
+    };
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
@@ -81,15 +89,16 @@ function Navbar({ t, isRTL, lang, onSwitch }: NavbarProps) {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        const activeEntry = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-
-        if (activeEntry && observedSectionIds.includes(activeEntry.target.id as ObservedSectionId)) {
-          setActiveSection(activeEntry.target.id as ObservedSectionId);
-        }
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id as ObservedSectionId);
+          }
+        });
       },
-      { threshold: 0.5 }
+      {
+        rootMargin: "-20% 0px -75% 0px",
+        threshold: 0,
+      }
     );
 
     const sections = observedSectionIds
@@ -102,26 +111,58 @@ function Navbar({ t, isRTL, lang, onSwitch }: NavbarProps) {
 
   return (
     <nav
-      className="w-full sticky top-0 z-50 border-b transition-all duration-300 ease-in-out"
+      className="w-full sticky top-0 z-50 transition-all duration-300 ease-in-out"
       style={{
-        background: isScrolled ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.65)",
-        backdropFilter: `blur(${isScrolled ? 16 : 10}px)`,
-        WebkitBackdropFilter: `blur(${isScrolled ? 16 : 10}px)`,
-        borderColor: isScrolled ? "rgba(125,178,173,0.15)" : "transparent",
+        background: isScrolled || isMobileMenuOpen ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)",
+        backdropFilter: `blur(${isScrolled || isMobileMenuOpen ? 16 : 10}px)`,
+        WebkitBackdropFilter: `blur(${isScrolled || isMobileMenuOpen ? 16 : 10}px)`,
+        borderBottom: isScrolled || isMobileMenuOpen ? "1px solid rgba(125,178,173,0.15)" : "1px solid transparent",
       }}
     >
-      <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-[64px] md:h-[72px] flex items-center justify-between gap-4">
+      <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-[64px] md:h-[72px] flex items-center justify-between gap-4 relative bg-transparent z-20">
 
-        <div className="flex-shrink-0">
+        {/* زر الموبايل (الهمبرغر) */}
+        <div className="md:hidden flex-shrink-0 w-[50px]">
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              setIsLangMenuOpen(false); // إغلاق اللغة إذا فتحنا القائمة
+            }}
+            aria-label="Toggle menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-navigation"
+            className="p-2 -ml-2 text-[#333] transition-transform duration-300 hover:opacity-70"
+          >
+            {isMobileMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none" stroke="currentColor" strokeWidth="1.2">
+                <line x1="0" y1="1" x2="24" y2="1" />
+                <line x1="0" y1="11" x2="16" y2="11" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* الشعار */}
+        <div className="md:static absolute left-1/2 -translate-x-1/2 md:translate-x-0 flex-shrink-0">
           <a
             href="#hero"
             aria-label="Back to top"
-            className="flex-shrink-0 transition-opacity duration-300 hover:opacity-80 cursor-pointer"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              setIsLangMenuOpen(false);
+            }}
+            className="flex-shrink-0 transition-opacity duration-300 hover:opacity-80 cursor-pointer block"
           >
-            <img src={imgLogo} alt="IZZURE" className="h-[22px] object-contain" />
+            <img src={imgLogo} alt="IZZURE" className="h-[20px] md:h-[22px] object-contain" />
           </a>
         </div>
 
+        {/* روابط الديسكتوب */}
         <ul className="hidden md:flex items-center gap-10">
           {navLinks.map((item) => {
             const sectionId = item.href.slice(1) as ObservedSectionId;
@@ -148,28 +189,98 @@ function Navbar({ t, isRTL, lang, onSwitch }: NavbarProps) {
           })}
         </ul>
 
-        <div
-          className="flex items-center gap-1 select-none flex-shrink-0"
-          style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", letterSpacing: "0.08em" }}
-        >
-          {(["ar", "en"] as Lang[]).map((code, i) => (
-            <span key={code} className="flex items-center">
-              {i === 1 && <span className="text-[#ccc] px-1">|</span>}
+        {/* ─── محول اللغة الجديد (أيقونة الكرة الأرضية) ─── */}
+        <div className="relative flex items-center justify-end flex-shrink-0 w-[50px] md:w-auto">
+          <button
+            onClick={() => {
+              setIsLangMenuOpen(!isLangMenuOpen);
+              setIsMobileMenuOpen(false); // إغلاق قائمة الموبايل لتجنب التداخل
+            }}
+            aria-label="Change language"
+            aria-expanded={isLangMenuOpen}
+            aria-controls="language-menu"
+            className="p-2 -mr-2 text-[#333] transition-opacity hover:opacity-70 flex items-center gap-1.5"
+          >
+            {/* عرض اللغة الحالية في الديسكتوب فقط بجانب الأيقونة */}
+            <span className="hidden md:block text-[12px] font-medium uppercase tracking-widest text-[#888]">
+              {lang}
+            </span>
+            {/* أيقونة الكرة الأرضية بخطوط رفيعة 1.2 */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </button>
+
+          {/* القائمة المنسدلة للغات */}
+          <div
+            id="language-menu"
+            aria-hidden={!isLangMenuOpen}
+            hidden={!isLangMenuOpen}
+            className={`absolute top-[45px] ${isRTL ? "left-0" : "right-0"} bg-white/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-[#eee] rounded-lg overflow-hidden transition-all duration-300 ease-in-out flex flex-col min-w-[90px] ${isLangMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"
+              }`}
+          >
+            {(["ar", "en"] as const).map((code) => (
               <button
-                onClick={() => onSwitch(code)}
-                aria-label={code === "ar" ? "Switch to Arabic" : "Switch to English"}
-                className="px-2 py-1 rounded transition-all duration-200 uppercase"
+                key={code}
+                onClick={() => {
+                  onSwitch(code);
+                  setIsLangMenuOpen(false);
+                }}
+                className="px-4 py-3 text-center transition-colors duration-200 hover:bg-[#f5f9f9]"
                 style={{
-                  color: lang === code ? "#26635e" : "#888",
+                  color: lang === code ? "#23a5c2" : "#555",
                   fontWeight: lang === code ? 600 : 400,
-                  background: lang === code ? "rgba(38,99,94,0.06)" : "transparent",
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: "13px",
+                  letterSpacing: "0.08em",
+                  borderBottom: code === "ar" ? "1px solid #f0f0f0" : "none",
+                  background: lang === code ? "rgba(35,165,194,0.05)" : "transparent",
                 }}
               >
-                {code}
+                {code === "ar" ? "العربية" : "English"}
               </button>
-            </span>
-          ))}
+            ))}
+          </div>
         </div>
+
+      </div>
+
+      {/* القائمة المنسدلة للموبايل */}
+      <div
+        id="mobile-navigation"
+        aria-hidden={!isMobileMenuOpen}
+        hidden={!isMobileMenuOpen}
+        className={`md:hidden absolute top-full left-0 w-full bg-white/95 backdrop-blur-md shadow-sm transition-all duration-400 ease-in-out overflow-hidden z-10 ${isMobileMenuOpen ? "max-h-[300px] border-b border-[#eee] opacity-100" : "max-h-0 opacity-0"
+          }`}
+      >
+        <ul className="flex flex-col items-center py-6 gap-6">
+          {navLinks.map((item) => {
+            const sectionId = item.href.slice(1) as ObservedSectionId;
+            const isActive = activeSection === sectionId;
+
+            return (
+              <li key={item.href}>
+                <a
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block transition-all duration-300 ease-in-out hover:opacity-100"
+                  style={{
+                    color: isActive ? "#23a5c2" : "#444",
+                    opacity: isActive ? 1 : 0.7,
+                    fontFamily: btnFont(isRTL),
+                    fontSize: "17px",
+                    fontWeight: isActive ? 600 : 400,
+                    letterSpacing: isRTL ? "0" : "0.05em",
+                  }}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </nav>
   );
@@ -238,7 +349,8 @@ function Hero({ t, isRTL }: LangProps) {
       <div className="relative z-10 isolate max-w-[1380px] mx-auto px-5 md:px-8 lg:px-12 w-full py-16 md:py-14 flex flex-col md:flex-row items-center gap-8 md:gap-5 lg:gap-6">
 
         {/* TEXT BLOCK */}
-        <div className="w-full max-w-[560px] md:max-w-none md:w-[48%] min-w-0 relative z-10 flex flex-col items-start gap-5 md:gap-6 pt-0 md:pt-6 pb-0 md:pb-10">
+        {/* التعديل تم في السطر التالي: أضفنا -mt-24 للموبايل، و md:mt-0 للكمبيوتر */}
+        <div className="w-full max-w-[560px] md:max-w-none md:w-[48%] min-w-0 relative z-10 flex flex-col items-start gap-5 md:gap-6 -mt-24 md:mt-0 pt-0 md:pt-6 pb-0 md:pb-10">
 
           <div className="relative z-10 w-[64px] h-[64px] md:w-[92px] md:h-[92px] flex-shrink-0 animate-fade-up-1">
             <img
@@ -295,7 +407,6 @@ function Hero({ t, isRTL }: LangProps) {
         {/* IMAGE BLOCK */}
         <div className="hidden md:flex w-full md:w-[52%] min-w-0 relative justify-center items-center flex-shrink-0 mt-8 md:mt-0">
 
-          {/* السر هنا: صغرنا حجم الحاوية لتتناسب مع شاشات اللابتوب بدلاً من الأحجام الضخمة */}
           <div className="relative w-[86vw] max-w-[340px] min-[400px]:max-w-[370px] aspect-square md:w-[540px] md:h-[540px] md:max-w-none lg:w-[640px] lg:h-[640px] xl:w-[720px] xl:h-[720px] flex items-center justify-center animate-fade-up-2">
 
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -315,7 +426,7 @@ function Hero({ t, isRTL }: LangProps) {
         <button
           type="button"
           aria-label="Scroll to collection"
-          className="absolute bottom-4 md:bottom-6 left-1/2 z-20 flex h-[56px] w-[36px] -translate-x-1/2 items-start justify-center bg-transparent animate-fade-up-3"
+          className="absolute -bottom-4 md:bottom-6 left-1/2 z-20 flex h-[56px] w-[36px] -translate-x-1/2 items-start justify-center bg-transparent animate-fade-up-3"
           onClick={() => document.querySelector("#collection")?.scrollIntoView({ behavior: "smooth" })}
         >
           <span className="relative mt-2 flex h-[36px] w-[10px] justify-center" style={{ animation: "hero-scroll-float 2s ease-in-out infinite" }}>
@@ -333,6 +444,14 @@ function Hero({ t, isRTL }: LangProps) {
    PRODUCT / COLLECTION
 ═══════════════════════════════════════════════════════════════ */
 function ProductSection({ t, isRTL }: LangProps) {
+
+  // ─── إعداد الرابط الذكي للواتساب مع الرسالة التلقائية ───
+  const phoneNumber = "963937387728";
+  const whatsappMessage = isRTL
+    ? "مرحباً IZZURE, \nأود طلب العطر الخاص بكم، الرجاء تزويدي بتفاصيل الدفع والتوصيل."
+    : "Hello IZZURE, \nI would like to order your fragrance. Please provide me with the payment and delivery details.";
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(whatsappMessage)}`;
+
   return (
     <section id="collection" className="bg-[#fafcff] py-16 md:py-28 lg:py-40 md:min-h-[90vh] flex flex-col justify-center relative">
       <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-12 w-full">
@@ -347,7 +466,7 @@ function ProductSection({ t, isRTL }: LangProps) {
               src={imgProductCard}
               alt="IZHAR Fragrance"
               className="relative z-10 w-full max-w-[85%] md:max-w-[900px] lg:max-w-[1000px] h-auto object-contain scale-[1] md:scale-[1.05]"
-              style={{ filter: "drop-shadow(0 30px 60px rgba(38,99,94,0.18))", animation: "floatSoft 6s ease-in-out infinite" }}
+              style={{ filter: "drop-shadow(0 30px 60px rgba(178, 249, 252, 0.34))", animation: "floatSoft 6s ease-in-out infinite" }}
             />
           </div>
 
@@ -433,8 +552,9 @@ function ProductSection({ t, isRTL }: LangProps) {
             </div>
 
             <div className="flex flex-col items-center md:items-start gap-4 mt-3 md:mt-4 w-full">
+              {/* استبدلنا الرابط الثابت بالرابط الذكي whatsappUrl */}
               <a
-                href="https://wa.me/963937387728"
+                href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center w-full md:w-auto px-8 py-3.5 rounded-xl text-white transition-all duration-300 hover:scale-[1.03]"
@@ -482,12 +602,11 @@ function ProductSection({ t, isRTL }: LangProps) {
     </section>
   );
 }
-
 /* ═══════════════════════════════════════════════════════════════
    STORY
 ═══════════════════════════════════════════════════════════════ */
 
-const storyImages = [imgStory1, imgStory2, imgStory3, imgStory4];
+const storyImages = [imgStory1, imgStory2, imgStory3, imgStory4] as const;
 
 function StorySection({ t, isRTL, lang }: LangProps) {
   const [activeStep, setActiveStep] = useState(0);
@@ -549,6 +668,7 @@ function StorySection({ t, isRTL, lang }: LangProps) {
             const isActive = activeStep === idx;
             const isVisible = visibleSteps.includes(idx);
             const isRightSide = isRTL ? idx % 2 === 0 : idx % 2 === 1;
+            const storyImage = storyImages[idx % storyImages.length];
 
             const cardSideClass = isRightSide
               ? "md:col-start-3 md:justify-self-start"
@@ -575,8 +695,7 @@ function StorySection({ t, isRTL, lang }: LangProps) {
                     </span>
 
                     <div className="overflow-hidden rounded-xl bg-[#dfecec]">
-                      <img src={storyImages[idx]} alt={block.title} className="h-[210px] w-full object-cover transition-transform duration-700 group-hover:scale-105 md:h-[300px]" />
-                    </div>
+                      <img src={storyImage} alt={block.title} loading="lazy" className="h-[210px] w-full object-cover transition-transform duration-700 group-hover:scale-105 md:h-[300px]" />                    </div>
 
                     <div className="flex flex-col items-start gap-4 pt-6 md:gap-5 md:pt-7" dir={isRTL ? "rtl" : "ltr"}>
                       <span
@@ -635,7 +754,7 @@ function ContactSection({ t, isRTL }: LangProps) {
       key: "email",
       icon: <svg width="28" height="28" viewBox="0 0 46.5196 46.5196" fill="none"><path d={svgPaths.p2fc58e00} fill="white" /></svg>,
       label: t.contact.emailLabel,
-      value: "jumaa@gmail.com",
+      value: "hello@izzure.com",
     },
     {
       key: "phone",
@@ -783,15 +902,19 @@ function Footer({ t, isRTL }: LangProps) {
             <span className="text-[rgba(255,255,255,0.40)]" style={{ fontFamily: btnFont(isRTL), fontSize: "13px", letterSpacing: isRTL ? "0" : "0.08em" }}>
               {t.footer.followUs}
             </span>
-            <a href="#" aria-label="Instagram" className="opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-300">
+
+            <a href="https://www.instagram.com/izzuree" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-300">
               <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="rgba(255,255,255,0.85)"><path d="M7 2C4.24 2 2 4.24 2 7v10c0 2.76 2.24 5 5 5h10c2.76 0 5-2.24 5-5V7c0-2.76-2.24-5-5-5H7zm10 2c1.66 0 3 1.34 3 3v10c0 1.66-1.34 3-3 3H7c-1.66 0-3-1.34-3-3V7c0-1.66 1.34-3 3-3h10zm-5 3a5 5 0 100 10 5 5 0 000-10zm0 2a3 3 0 110 6 3 3 0 010-6zm4.5-.75a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5z" /></svg>
             </a>
-            <a href="#" aria-label="Facebook" className="opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-300">
+
+            <a href="https://www.facebook.com/izzuree" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-300">
               <svg className="w-[18px] h-[18px]" viewBox="0 0 640 640" fill="rgba(255,255,255,0.85)"><path d="M576 320C576 178.6 461.4 64 320 64C178.6 64 64 178.6 64 320C64 440 146.7 540.8 258.2 568.5L258.2 398.2L205.4 398.2L205.4 320L258.2 320L258.2 286.3C258.2 199.2 297.6 158.8 383.2 158.8C399.4 158.8 427.4 162 438.9 165.2L438.9 236C432.9 235.4 422.4 235 409.3 235C367.3 235 351.1 250.9 351.1 292.2L351.1 320L434.7 320L420.3 398.2L351 398.2L351 574.1C477.8 558.8 576 450.9 576 320z" /></svg>
             </a>
-            <a href="#" aria-label="X" className="opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-300">
+
+            <a href="https://x.com/izzuree" target="_blank" rel="noopener noreferrer" aria-label="X" className="opacity-50 hover:opacity-100 hover:scale-110 transition-all duration-300">
               <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="rgba(255,255,255,0.85)"><path d="M18.244 2H21l-6.5 7.43L22 22h-6.828l-4.25-5.56L5.9 22H3l7-8L2 2h6.828l3.85 5.05L18.244 2zm-2.4 18h1.9L8.1 4H6.2l9.644 16z" /></svg>
             </a>
+
           </div>
         </div>
 
